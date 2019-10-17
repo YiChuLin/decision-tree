@@ -18,6 +18,7 @@ def entropy(data):
 	Input: 2d numpy array
 	Output: single value representing the entropy
 	"""
+	
 	labels = set(data[:,-1])
 	data_num = data.shape[0]
 	instances = dict.fromkeys(labels,0)
