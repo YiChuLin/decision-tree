@@ -46,8 +46,8 @@ def find_split(data):
 		for i in range(data_num - 1):
 			split = (data[i+1, attr] + data[i,attr])/2.0
 			#split the data based on the calculated split
-			b1 = data[data[:,0] > split]
-			b2 = data[data[:,0] <= split]
+			b1 = data[data[:,attr] > split]
+			b2 = data[data[:,attr] <= split]
 			# Calculate the information gain with this split
 			# For simplicity we calculate the remainder and take the minus sign to quantify it
 			Hb1 = entropy(b1)
@@ -72,7 +72,6 @@ def decision_tree_learning(sub_data, d = 0):
 	node = {'attr':None, 'value':None, 'left':None, 'right':None}
 	#Check if all labels are the same
 	label_num = len(set(sub_data[:,-1]))
-	print("Current Depth = "+int(d))
 	if label_num == 1:
 		# No further seperation is needed, return the node as leaf
 		node['attr'] = 'leaf'; node['value'] = sub_data[0,-1]
@@ -87,5 +86,29 @@ def decision_tree_learning(sub_data, d = 0):
 		node['left'], d1 = decision_tree_learning(l_set, d = d+1)
 		node['right'], d2 = decision_tree_learning(r_set, d = d+1)
 		depth = max(d1,d2)
-		return node, d
-		
+		return node, depth
+
+def classify(tree, data_point):
+	at_leaf = False
+	label = None
+	while not at_leaf:
+		attr = tree['attr']
+		if attr == 'leaf':
+			label = tree['value']
+			at_leaf = True
+		else:
+			split = tree['split']
+			if data_point[attr] > split:
+				tree = tree['left']
+			else:
+				tree = tree['right']
+	return label
+
+def evaluate(tree, data):
+	data_num = data.shape[0]
+	correct_num = 0
+	for data_point in data:
+		prediction = classify(tree, data_point)
+		correct_num += (prediction == data_point[-1])
+	accuracy = float(correct_num)/data_num
+	return accuracy
