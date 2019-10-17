@@ -44,21 +44,24 @@ def find_split(data):
 		# Find the optimal split in this attribute
 		data = data[data[:,attr].argsort()]
 		for i in range(data_num - 1):
-			split = (data[i+1, attr] + data[i,attr])/2.0
-			#split the data based on the calculated split
-			b1 = data[data[:,attr] > split]
-			b2 = data[data[:,attr] <= split]
-			# Calculate the information gain with this split
-			# For simplicity we calculate the remainder and take the minus sign to quantify it
-			Hb1 = entropy(b1)
-			Hb2 = entropy(b2)
-			neg_remainder = -(float(b1.shape[0])/data_num*Hb1 + float(b2.shape[0])/data_num*Hb2)
-			if neg_remainder > info_gain or info_gain == None:
-				info_gain = neg_remainder
-				node_split = split
-				node_attr = attr
-				l_set = b1
-				r_set = b2
+			if data[i, attr] == data[i+1,attr]:
+				continue
+			else:
+				split = (data[i+1, attr] + data[i,attr])/2.0
+				#split the data based on the calculated split
+				b1 = data[data[:,attr] > split]
+				b2 = data[data[:,attr] <= split]
+				# Calculate the information gain with this split
+				# For simplicity we calculate the remainder and take the minus sign to quantify it
+				Hb1 = entropy(b1)
+				Hb2 = entropy(b2)
+				neg_remainder = -(float(b1.shape[0])/data_num*Hb1 + float(b2.shape[0])/data_num*Hb2)
+				if  info_gain == None or neg_remainder > info_gain:
+					info_gain = neg_remainder
+					node_split = split
+					node_attr = attr
+					l_set = b1
+					r_set = b2
 	return node_attr, node_split, l_set, r_set
 
 def decision_tree_learning(sub_data, d = 0):
@@ -112,3 +115,7 @@ def evaluate(tree, data):
 		correct_num += (prediction == data_point[-1])
 	accuracy = float(correct_num)/data_num
 	return accuracy
+
+tree, d = decision_tree_learning(data)
+accuracy=evaluate(tree, data)
+print(str(accuracy))
