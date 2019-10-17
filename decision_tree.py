@@ -113,3 +113,24 @@ def evaluate(tree, data):
 		correct_num += (prediction == data_point[-1])
 	accuracy = float(correct_num)/data_num
 	return accuracy
+
+def cross_validate(data,k_fold=10):
+	assert(type(data)==np.ndarray)
+	assert(type(k_fold)==int)
+	assert(len(data.shape)==2)
+
+	np.random.shuffle(data)
+
+	rows=data.shape[0]
+
+	for k in range(0,k_fold):
+		val_data_index=np.arange(int(rows*k/k_fold),int(rows*(k+1)/k_fold))
+		train_data_index=np.concatenate([np.arange(0,int(rows*k/k_fold)),np.arange(int(rows*(k+1)/k_fold),rows)])
+		tree=decision_tree_learning(data[train_data_index.astype(int)])
+		acc=evaluate(tree,data[val_data_index.astype(int)])
+		yield acc
+
+
+if __name__=="__main__":
+	for acc in cross_validate(data):
+		print("Average accuracy: "+str(acc))
