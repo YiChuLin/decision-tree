@@ -130,7 +130,17 @@ def cross_validate(data,k_fold=10):
 		acc=evaluate(tree,data[val_data_index.astype(int)])
 		yield acc
 
+def compute_confusion_matrix(tree,test_data,num_label):
+	assert(type(test_data)==np.ndarray)
+	assert(type(num_label)==int)
+	assert(num_label>0)
 
-if __name__=="__main__":
-	for acc in cross_validate(data):
-		print("Average accuracy: "+str(acc))
+	confusion_matrix=np.zeros([num_label,num_lable])
+
+	for data_point in test_data:
+		predict_label=classify(tree,data_point)
+		gt_label=int(data_point[-1])
+		confusion_matrix[predict_label,gt_label]+=1
+
+	return confusion_matrix
+	
