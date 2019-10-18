@@ -88,6 +88,46 @@ def decision_tree_learning(sub_data, d = 0):
 		depth = max(d1,d2)
 		return node, depth
 
+#Not Done, in progress
+def prune_1level(tree, data):
+	"""
+	We assume most of the data are classified correctly
+	"""
+	labels = set(data[:,-1])
+	prop_tree = {'data_count':dict.fromkeys(labels,0),'visit_count':0,'left':None, 'right':None}
+	curr_node = prop_tree
+	for data_point in data:
+		true_label = data_point[-1]
+		at_leaf = False
+		label = None
+		curr_node = prop_tree
+		while not at_leaf:
+			attr = tree['attr']
+			curr_node['data_count'][true_label] += 1
+			curr_node['visit_count'] += 1
+			if attr == 'leaf':
+				label = tree['value']
+				at_leaf = True
+			else:
+				split = tree['split']
+				if data_point[attr] > split:
+					if curr_node['left'] == None:
+						next_node = {'data_count':dict.fromkeys(labels,0),'visit_count':0,'left':None, 'right':None}
+						curr_node['left'] = next_node
+						curr_node = next_node
+					else:
+						curr_node = curr_node['left']
+					tree = tree['left']
+				else:
+					if curr_node['right'] == None:
+						next_node = {'data_count':dict.fromkeys(labels,0),'visit_count':0,'left':None, 'right':None}
+						curr_node['left'] = next_node
+						curr_node = next_node
+					else:
+						curr_node = curr_node['right']
+					tree = tree['right']
+	return prop_tree
+
 def classify(tree, data_point):
 	at_leaf = False
 	label = None
