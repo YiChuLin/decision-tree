@@ -18,6 +18,7 @@ def entropy(data):
 	Input: 2d numpy array
 	Output: single value representing the entropy
 	"""
+	
 	labels = set(data[:,-1])
 	data_num = data.shape[0]
 	instances = dict.fromkeys(labels,0)
@@ -44,21 +45,24 @@ def find_split(data):
 		# Find the optimal split in this attribute
 		data = data[data[:,attr].argsort()]
 		for i in range(data_num - 1):
-			split = (data[i+1, attr] + data[i,attr])/2.0
-			#split the data based on the calculated split
-			b1 = data[data[:,attr] > split]
-			b2 = data[data[:,attr] <= split]
-			# Calculate the information gain with this split
-			# For simplicity we calculate the remainder and take the minus sign to quantify it
-			Hb1 = entropy(b1)
-			Hb2 = entropy(b2)
-			neg_remainder = -(float(b1.shape[0])/data_num*Hb1 + float(b2.shape[0])/data_num*Hb2)
-			if neg_remainder > info_gain or info_gain == None:
-				info_gain = neg_remainder
-				node_split = split
-				node_attr = attr
-				l_set = b1
-				r_set = b2
+			if data[i, attr] == data[i+1,attr]:
+				continue
+			else:
+				split = (data[i+1, attr] + data[i,attr])/2.0
+				#split the data based on the calculated split
+				b1 = data[data[:,attr] > split]
+				b2 = data[data[:,attr] <= split]
+				# Calculate the information gain with this split
+				# For simplicity we calculate the remainder and take the minus sign to quantify it
+				Hb1 = entropy(b1)
+				Hb2 = entropy(b2)
+				neg_remainder = -(float(b1.shape[0])/data_num*Hb1 + float(b2.shape[0])/data_num*Hb2)
+				if  info_gain == None or neg_remainder > info_gain:
+					info_gain = neg_remainder
+					node_split = split
+					node_attr = attr
+					l_set = b1
+					r_set = b2
 	return node_attr, node_split, l_set, r_set
 
 def decision_tree_learning(sub_data, d = 0):
@@ -152,3 +156,69 @@ def evaluate(tree, data):
 		correct_num += (prediction == data_point[-1])
 	accuracy = float(correct_num)/data_num
 	return accuracy
+
+
+def cross_validate(data,k_fold=10):
+	"""
+	perform k-fold cross validation on learn_decision_tree
+	
+	Args:
+		data (np.array): train/val data with label on the last column
+		k	 (int): data.shape[0]>=k>0
+	Outputs:
+	"""
+	assert(type(data)==np.ndarray)
+	assert(len(data.shape)==2 and data.shape[1]>1)
+
+	num_row=data.shape[0]
+	assert(type(k_fold)==int)
+	assert(k_fold>0 and k_fold<=num_row)
+
+	np.random.shuffle(data)
+
+	k_range = lambda k_head,k_tail: (num_row*np.arange(k_head,k_tail)/k_fold).astype(int)
+
+	for k in range(0,k_fold):
+		# divide data to train/val set
+		val_data=data[k_range(k,k+1)]
+		train_data=data[np.concatenate(k_range(0,k),k_range(k+1,k_fold))]
+
+		# train decision tree
+		tree,_=decision_tree_learning(train_data)
+		acc=evaluate(tree,val_data)
+		
+		yield acc
+
+
+def compute_confusion_matrix(tree,test_data,num_label):
+	"""
+	compute confusion matrix of a learnt tree
+	
+	Args:
+		tree	 (dict): learnt decision tree
+		test_data (int): test data with label on the last column
+		num_label (int): number of label category in dataset(row/col number of matrix)
+	Outputs:
+	"""
+	assert(type(tree)==dict)
+	assert(type(test_data)==np.ndarray)
+	assert(len(test_data.shape)==2 and test_data.shape[1]>1)
+	assert(type(num_label)==int)
+	assert(num_label>0)
+
+	confusion_matrix=np.zeros([num_label,num_label])
+
+	for data_point in test_data:
+		predict_label=classify(tree,data_point)
+		gt_label=data_point[-1]
+		confusion_matrix[int(predict_label)-1,int(gt_label)-1]+=1
+
+	return confusion_matrix
+	
+
+def main():
+	tree, _ = decision_tree_learning(data)
+	print(compute_confusion_matrix(tree,data,4))
+
+if __name__=="__main__":
+	main()
