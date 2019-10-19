@@ -1,4 +1,4 @@
-from Test import *
+from decision_tree import *
 import numpy as np
 
 # Load the datasets
