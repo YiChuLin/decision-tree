@@ -2,12 +2,17 @@ from decision_tree import *
 import numpy as np
 
 # Load the datasets
-filepath = ''
-filename = 'clean_dataset.txt'
+filepath = 'wifi_db/'
+filename = 'noisy_dataset.txt'
 data = np.loadtxt(filepath+filename)
 
-x = data[:,:-1]
-y = data[:,-1]
+np.random.shuffle(data)
+
+x_train = data[:1500,:-1]
+y_train = data[:1500,-1]
+
+x_test = data[1500:,:-1]
+y_test = data[1500:,-1]
 
 
 def evaluate(predicted_label, true_label):
@@ -40,21 +45,21 @@ def compute_confusion_matrix(tree,test_data,num_label):
 	assert(len(test_data.shape)==2 and test_data.shape[1]>1)
 	assert(type(num_label)==int)
 	assert(num_label>0)
-
 	confusion_matrix=np.zeros([num_label,num_label])
-
 	predict_label = tree.classify(data[:,:-1])
 	gt_label = data[:,-1]
 	for p, g in zip(predict_label, gt_label):
 		confusion_matrix[int(p)-1,int(g)-1]+=1
-
 	return confusion_matrix
 
 tree = decision_tree()
-tree.train(x,y)
+tree.train(x_train,y_train)
 
-y_pred = tree.classify(x)
-print("Accuracy: " + str(evaluate(y_pred, y)))
+y_pred = tree.classify(x_test)
+print("Accuracy: " + str(evaluate(y_pred, y_test)))
+tree.prune(x_test,y_test)
+y_pred = tree.classify(x_test)
+print("Accuracy: " + str(evaluate(y_pred, y_test)))
 
-confusion_matrix = compute_confusion_matrix(tree, data, len(set(y)))
+confusion_matrix = compute_confusion_matrix(tree, data, len(set(y_test)))
 print(confusion_matrix)
