@@ -1,9 +1,10 @@
 from decision_tree import *
 import numpy as np
 
+
 # Load the datasets
 filepath = 'wifi_db/'
-filename = 'noisy_dataset.txt'
+filename = 'clean_dataset.txt'
 data = np.loadtxt(filepath+filename)
 
 np.random.shuffle(data)
@@ -52,14 +53,20 @@ def compute_confusion_matrix(tree,test_data,num_label):
 		confusion_matrix[int(p)-1,int(g)-1]+=1
 	return confusion_matrix
 
-tree = decision_tree()
+tree = Decision_tree()
 tree.train(x_train,y_train)
 
 y_pred = tree.classify(x_test)
 print("Accuracy: " + str(evaluate(y_pred, y_test)))
+
+tree.draw()
+
 tree.prune(x_test,y_test)
 y_pred = tree.classify(x_test)
 print("Accuracy: " + str(evaluate(y_pred, y_test)))
 
 confusion_matrix = compute_confusion_matrix(tree, data, len(set(y_test)))
 print(confusion_matrix)
+
+tree.draw()
+

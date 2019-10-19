@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Define essential functions for training a decision tree
 def entropy(label):
@@ -18,9 +19,64 @@ def entropy(label):
 	sep_entropy = [p*np.log2(p) for p in prob]
 	return -sum(sep_entropy)
 
+	#get the depth of each node
+def get_node_num(node_):
+	num_leafs = 0
+	if node_.left == None and node_.right == None:
+		num_leafs += 1
+	if node_.left != None:
+		num_leafs += get_node_num(node_.left)
+	if node_.right != None:
+		num_leafs += get_node_num(node_.right)
+	return num_leafs
+
+def get_node_depth(node_):
+	max_depth = 0
+	if node_.attr == 'leaf':
+		max_depth = 1
+		return max_depth 
+	else:
+		if node_.left != None:
+			this_depth_l = 1+get_node_depth(node_.left)
+		else:
+			this_depth_l = 1
+		if node_.right != None:
+			this_depth_r = 1+get_node_depth(node_.right)
+		else:
+			this_depth_r = 1
+		if this_depth_l >= this_depth_r:
+			max_depth = this_depth_l
+		else:
+			max_depth = this_depth_r
+		return max_depth
+
+
+
+
+def draw_node(node_, x, d, depth, total_leaf):
+	node_num = get_node_num(node_)
+	node_depth = get_node_depth(node_)
+	move = 1+node_num*node_depth
+	if node_.attr == "leaf":
+		plt.text(x, d, str(node_.value), fontsize= 10)
+		return x, d
+	else:
+		x_l, d_l = draw_node(node_.left, x+move, d-1, depth, total_leaf)
+		x_r, d_r = draw_node(node_.right, x-move, d-1, depth, total_leaf)
+		plt.plot([x, x_l], [d, d_l], 'b')
+		plt.scatter([x, x_l], [d, d_l], color = 'r', s = 10)
+		plt.plot([x, x_r], [d, d_r], 'b')
+		plt.scatter([x_r], [d_r], color = 'r', s = 10)
+		plt.text(x, d, str(node_.attr)+"<"+str(node_.value),fontsize = 10)
+		if d == depth:
+			plt.axis('off')
+			plt.show()
+		else:
+			return x, d
+
 
 # Define the decision tree class
-class node():
+class Node():
 	def __init__(self):
 		self.attr = None
 		self.value = None
@@ -52,7 +108,8 @@ class node():
 	def clear_visit_history(self):
 		self.data_count = None
 
-class decision_tree():
+
+class Decision_tree():
 	def __init__(self):
 		self.root = None
 		self.depth = 0
@@ -97,7 +154,7 @@ class decision_tree():
 		return node_attr, node_split, l_set, r_set
 
 	def decision_tree_learning(self, data, label, d = 0):
-		node_ = node()
+		node_ = Node()
 		label_num = len(set(label))
 		if label_num == 1:
 			node_.set_attr('leaf')
@@ -138,11 +195,12 @@ class decision_tree():
 		return label
 
 	def create_prop_node(self, label_num, parent=None):
-		p_node = node()
+		p_node = Node()
 		p_node.set_attr(dict.fromkeys(label_num,0))
 		p_node.set_value(0)
 		p_node.set_parent(parent)
 		return p_node
+
 	def prop(self, data, label):
 		label_num = set(label)
 		# In a prop tree we use attr to count all labels passed through and use value to count the total visit number
@@ -205,3 +263,7 @@ class decision_tree():
 				break
 		self.leafs = leafs
 		self.clear_prune_history(self.root)
+	
+	def draw(self):
+		total_leaf = get_node_num(self.root)
+		draw_node(self.root, 0, self.depth, self.depth, total_leaf)
