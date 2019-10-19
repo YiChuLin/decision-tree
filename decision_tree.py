@@ -194,7 +194,7 @@ class decision_tree():
 					if parent_acc >= child_acc and parent_acc != 0:
 						pruned = True
 						parent.clear_child()
-						new_val = list(parent.data_count.keys())[p_data.index(max(p_data))]
+						new_val = list(parent.data_count.keys())[list(p_data).index(max(p_data))]
 						parent.set_value(new_val)
 						parent.set_attr('leaf')
 						new_leafs.append(parent)
