@@ -1,184 +1,360 @@
-"""
-decision_tree.py
-"""
-# Import the required libraries
 import numpy as np
-import matplotlib
+import matplotlib.pyplot as plt
 
-# Load the datasets
-filepath = 'wifi_db/'
-filename = 'clean_dataset.txt'
-
-data = np.loadtxt(filepath+filename)
-
-def entropy(data):
+# Define essential functions for training a decision tree
+def entropy(label):
+	"""Compute the entropy given a list of labels
+	Args:
+	  label (list of integers or numpy array with size (n,)): A list of labels
+	Returns:
+	  entropy (float): enropy of the given list of labels
 	"""
-	Usage: H = entropy(dataset)
-	Description: This function calculates the entropy given a data set assuming the last column represents the labels
-	Input: 2d numpy array
-	Output: single value representing the entropy
-	"""
-	
-	labels = set(data[:,-1])
-	data_num = data.shape[0]
+	assert (type(label) == np.ndarray or type(label) == list)
+
+	labels = set(label)
+	label_num = len(label)
 	instances = dict.fromkeys(labels,0)
-	for d in data:
-		instances[d[-1]] += 1
-	prob = [float(k)/data_num for k in list(instances.values())]
+	for l in label:
+		instances[l] += 1
+	prob = [float(k)/label_num for k in list(instances.values())]
 	sep_entropy = [p*np.log2(p) for p in prob]
 	return -sum(sep_entropy)
 
-def find_split(data):
+#get the depth of each node
+def get_node_num(node_):
 	"""
-	Usage:
-	Description:
-	Outputs:
+	Usage: n = get_node_num(node)
+	Description: Get the number of descendents of the node
+	Input: a node which from class Node
+	Output: number of descendents 
 	"""
-	attr_num = data.shape[1] - 1
-	data_num = data.shape[0]
-	info_gain = None
-	node_split = None
-	node_attr = None
-	l_set = np.empty([0, data.shape[1]])
-	r_set = np.empty([0, data.shape[1]])
-	for attr in range(attr_num):
-		# Find the optimal split in this attribute
-		data = data[data[:,attr].argsort()]
-		for i in range(data_num - 1):
-			if data[i, attr] == data[i+1,attr]:
-				continue
-			else:
-				split = (data[i+1, attr] + data[i,attr])/2.0
-				#split the data based on the calculated split
-				b1 = data[data[:,attr] > split]
-				b2 = data[data[:,attr] <= split]
-				# Calculate the information gain with this split
-				# For simplicity we calculate the remainder and take the minus sign to quantify it
-				Hb1 = entropy(b1)
-				Hb2 = entropy(b2)
-				neg_remainder = -(float(b1.shape[0])/data_num*Hb1 + float(b2.shape[0])/data_num*Hb2)
-				if  info_gain == None or neg_remainder > info_gain:
-					info_gain = neg_remainder
-					node_split = split
-					node_attr = attr
-					l_set = b1
-					r_set = b2
-	return node_attr, node_split, l_set, r_set
+	num_leafs = 0
+	if node_.left == None and node_.right == None:
+		num_leafs += 1
+	if node_.left != None:
+		num_leafs += get_node_num(node_.left)
+	if node_.right != None:
+		num_leafs += get_node_num(node_.right)
+	return num_leafs
 
-def decision_tree_learning(sub_data, d = 0):
+def get_node_depth(node_):
 	"""
-	Usage:
-	Description: The Tree is represented in a recurrsive dictionary
-	Inputs:
-	Outputs:
+	Usage: n = get_node_depth(node)
+	Description: Get the depth of the node
+	Input: a node which from class Node
+	Output: The depth of the node 
 	"""
-	#Create Empty Dictionary
-	node = {'attr':None, 'value':None, 'left':None, 'right':None}
-	#Check if all labels are the same
-	label_num = len(set(sub_data[:,-1]))
-	if label_num == 1:
-		# No further seperation is needed, return the node as leaf
-		node['attr'] = 'leaf'; node['value'] = sub_data[0,-1]
-		return node, d
-	elif label_num == 0:
-		node['attr'] = 'leaf'
-		return node, d		
+	max_depth = 0
+	if node_.attr == 'leaf':
+		max_depth = 1
+		return max_depth 
 	else:
-		attr, split,l_set, r_set = find_split(sub_data)
-		node['attr'] = attr
-		node['split'] = split
-		node['left'], d1 = decision_tree_learning(l_set, d = d+1)
-		node['right'], d2 = decision_tree_learning(r_set, d = d+1)
-		depth = max(d1,d2)
-		return node, depth
-
-def classify(tree, data_point):
-	at_leaf = False
-	label = None
-	while not at_leaf:
-		attr = tree['attr']
-		if attr == 'leaf':
-			label = tree['value']
-			at_leaf = True
+		if node_.left != None:
+			this_depth_l = 1+get_node_depth(node_.left)
 		else:
-			split = tree['split']
-			if data_point[attr] > split:
-				tree = tree['left']
-			else:
-				tree = tree['right']
-	return label
-
-def evaluate(tree, data):
-	data_num = data.shape[0]
-	correct_num = 0
-	for data_point in data:
-		prediction = classify(tree, data_point)
-		correct_num += (prediction == data_point[-1])
-	accuracy = float(correct_num)/data_num
-	return accuracy
+			this_depth_l = 1
+		if node_.right != None:
+			this_depth_r = 1+get_node_depth(node_.right)
+		else:
+			this_depth_r = 1
+		if this_depth_l >= this_depth_r:
+			max_depth = this_depth_l
+		else:
+			max_depth = this_depth_r
+		return max_depth
 
 
-def cross_validate(data,k_fold=10):
+
+
+def draw_node(node_, x, d, depth, total_leaf):
 	"""
-	perform k-fold cross validation on learn_decision_tree
+	Usage: x,d = draw_node(node_, x, d, depth, total_leaf)
+	Description: Get the position of node base on its parent's position and depth and the number of descentdents
+	Input: a node which from class Node, position of parent, the depth of parent, and the tolal number of leaf in this tree
+	Output: the position of this node and the depth of this node 
+	"""
+	node_num = get_node_num(node_)
+	node_depth = get_node_depth(node_)
+	move = 1+node_num*node_depth
+	if node_.attr == "leaf":
+		plt.text(x, d, str(node_.value), fontsize= 10)
+		return x, d
+	else:
+		x_l, d_l = draw_node(node_.left, x+move, d-1, depth, total_leaf)
+		x_r, d_r = draw_node(node_.right, x-move, d-1, depth, total_leaf)
+		plt.plot([x, x_l], [d, d_l], 'b')
+		plt.scatter([x, x_l], [d, d_l], color = 'r', s = 10)
+		plt.plot([x, x_r], [d, d_r], 'b')
+		plt.scatter([x_r], [d_r], color = 'r', s = 10)
+		plt.text(x, d, str(node_.attr)+"<"+str(node_.value),fontsize = 10)
+		if d == depth:
+			plt.axis('off')
+			plt.show()
+		else:
+			return x, d
+
+
+# Define the decision tree class
+class Node():
+	"""Node that serves as basic building blocks for the decision tree
 	
-	Args:
-		data (np.array): train/val data with label on the last column
-		k	 (int): data.shape[0]>=k>0
-	Outputs:
-	"""
-	assert(type(data)==np.ndarray)
-	assert(len(data.shape)==2 and data.shape[1]>1)
-
-	num_row=data.shape[0]
-	assert(type(k_fold)==int)
-	assert(k_fold>0 and k_fold<=num_row)
-
-	np.random.shuffle(data)
-
-	k_range = lambda k_head,k_tail: (num_row*np.arange(k_head,k_tail)/k_fold).astype(int)
-
-	for k in range(0,k_fold):
-		# divide data to train/val set
-		val_data=data[k_range(k,k+1)]
-		train_data=data[np.concatenate(k_range(0,k),k_range(k+1,k_fold))]
-
-		# train decision tree
-		tree,_=decision_tree_learning(train_data)
-		acc=evaluate(tree,val_data)
-		
-		yield acc
-
-
-def compute_confusion_matrix(tree,test_data,num_label):
-	"""
-	compute confusion matrix of a learnt tree
+	The node contains the neccesary attributes of splitting a decision tree.
+	Node() class is also designed to enable pruning process to run smoothly.
 	
-	Args:
-		tree	 (dict): learnt decision tree
-		test_data (int): test data with label on the last column
-		num_label (int): number of label category in dataset(row/col number of matrix)
-	Outputs:
+	Attributes
+		attr: The attribute of which to split a decision tree. The type would depend on the attributes
+		value: An integer that indicates the value to split
+		parent: A Node object which is the parent of this node
+		left: A Node object which is the left child of this node
+		right: A Node object which is the right child of this node
+		data_count: A dictionary the maps the labels and the number of occurrences that a data with such label visited a tree. This is only used in pruning and would be set to None if no data had visited or pruning ended.
+
+	Functions
+		__init__(self): initialize attributes
+		set_parent(self, node_): set current node's parent to node_
+		add_child(self, node_, direction): set current node's child at given direction to node_
+		set_attr(self, attr): set the node's attribute
+		set_value(self, value): set the node's value
+		clear_child(self): clear the node's child
+		set_data_count(self, label_num): initialize the data_count dictionary
+		update_data_count(self, label): update the data_count with the given label
+		clear_visit_history(self): set data_count to None
 	"""
-	assert(type(tree)==dict)
-	assert(type(test_data)==np.ndarray)
-	assert(len(test_data.shape)==2 and test_data.shape[1]>1)
-	assert(type(num_label)==int)
-	assert(num_label>0)
+	def __init__(self):
+		"""initialize attributes"""
+		self.attr = None
+		self.value = None
+		self.parent = None
+		self.left = None
+		self.right = None
+		# The following variable are used for pruning
+		self.data_count = None
+	def set_parent(self, node_):
+		"""set current node's parent to node_
+		Args:
+		  node_ (Node): the node that would be set to be the parent 
+		"""
+		assert (isinstance(node_, Node))
+		self.parent = node_
+	def add_child(self, node_, direction):
+		"""set current node's child at given direction to node_
+		Args:
+		  node_       (Node): the node that would be set to be the child
+		  direction (string): 'left' or 'right'
+		"""
+		assert (direction == 'left' or direction == 'right')
+		assert (isinstance(node_, Node))
+		if direction == "left":
+			self.left = node_
+		elif direction == "right":
+			self.right = node_
 
-	confusion_matrix=np.zeros([num_label,num_label])
+	def set_attr(self, attr):
+		"""set the node's attribute
+		Args:
+		  attr	: The attribute to be set
+		"""
+		self.attr = attr
+	def set_value(self, value):
+		"""set the node's value
+		Args:
+		  value (int or float): the value to be set
+		"""
+		assert (type(value) == int or type(value) == float)
+		self.value = value
+	def clear_child(self):
+		"""clear the node's child"""
+		self.left = None
+		self.right = None
+	def set_data_count(self, label_num):
+		"""initialize the data_count dictionary
+		Args:
+		  label_num (set): A set of all possible labels
+		"""
+		self.data_count = dict.fromkeys(label_num,0)
+	def update_data_count(self, label):
+		"""update the data_count with the given label
+		Args:
+		  label : a label that should be an element of label_num used in set_data_count(label_num)
+		"""
+		assert(label in data_count.keys())
+		self.data_count[label] += 1
+	def clear_visit_history(self):
+		"""set data_count to None"""
+		self.data_count = None
 
-	for data_point in test_data:
-		predict_label=classify(tree,data_point)
-		gt_label=data_point[-1]
-		confusion_matrix[int(predict_label)-1,int(gt_label)-1]+=1
 
-	return confusion_matrix
+class Decision_tree():
+	"""Decision_tree that can be trained and pruned
 	
+	Attributes
+		root  (Node): The root Node of the decision_tree (Initialized to None)
+		depth  (int): The depth of the initially trained decision_tree (Initialized to 0). Does not change after pruning
+		leafs (list of Nodes): A list of Nodes that is the leafs of the tree
+	Functions
+		__init__(self): initialize attributes
+		find_split(self, data, label): find the best split given the data and label
+		decision_tree_learning(data, label, d = 0): learn the decision tree
+	"""
+	def __init__(self):
+		self.root = None
+		self.depth = 0
+		self.leafs = []
+	def find_split(self, data, label):
+		"""
+		Usage:
+		Description:
+		Outputs:
+		"""
+		data_num, attr_num = data.shape
 
-def main():
-	tree, _ = decision_tree_learning(data)
-	print(compute_confusion_matrix(tree,data,4))
+		info_gain = float('-inf')
+		node_split = None
+		node_attr = None
+		l_set = np.empty([0, data.shape[1]])
+		r_set = np.empty([0, data.shape[1]])
+		for attr in range(attr_num):
+			# Find the optimal split in this attribute
+			data, label = (data[data[:,attr].argsort()], label[data[:,attr].argsort()])
+			for i in range(data_num - 1):
+				if data[i, attr] == data[i+1,attr]:
+					continue
+				else:
+					split = (data[i+1, attr] + data[i,attr])/2.0
+					#split the data based on the calculated split
+					l_branch = data[:,attr] > split
+					l_data, l_label = (data[l_branch], label[l_branch])
+					r_branch = data[:,attr] <= split
+					r_data, r_label = (data[r_branch], label[r_branch])
+					# Calculate the information gain with this split
+					# For simplicity we calculate the remainder and take the minus sign to quantify it
+					H_l = entropy(l_label)
+					H_r = entropy(r_label)
+					neg_remainder = -float(len(l_label)*H_l + len(r_label)*H_r)/data_num
+					if  neg_remainder > info_gain:
+						info_gain = neg_remainder
+						node_split = split
+						node_attr = attr
+						l_set = (l_data, l_label)
+						r_set = (r_data, r_label)
+		return node_attr, node_split, l_set, r_set
 
-if __name__=="__main__":
-	main()
+	def decision_tree_learning(self, data, label, d = 0):
+		node_ = Node()
+		label_num = len(set(label))
+		if label_num == 1:
+			node_.set_attr('leaf')
+			node_.set_value(label[0])
+			return node_, d, [node_]
+		else:
+			attr, split, l_set, r_set = self.find_split(data, label)
+			node_.set_attr(attr)
+			node_.set_value(split)
+			node_l, d_l, leaf_l = self.decision_tree_learning(l_set[0], l_set[1], d+1)
+			node_r, d_r, leaf_r = self.decision_tree_learning(r_set[0], r_set[1], d+1)
+			node_l.set_parent(node_); node_r.set_parent(node_)
+			node_.add_child(node_l, "left")
+			node_.add_child(node_r, "right")			
+			d = max(d_l, d_r)
+			leaf_l.extend(leaf_r) 
+			return node_, d, leaf_l
+
+	def train(self, data, label):
+		self.root, self.depth, self.leafs = self.decision_tree_learning(data, label)
+
+	def classify(self, data):
+		label = []
+		for d in data:
+			tree = self.root
+			while True:
+				attr = tree.attr
+				if attr == "leaf":
+					label.append(tree.value)
+					break
+				else:
+					split = tree.value
+					if d[attr] > split:
+						tree = tree.left
+					else:
+						tree = tree.right
+		return label
+
+	def create_prop_node(self, label_num, parent=None):
+		p_node = Node()
+		p_node.set_attr(dict.fromkeys(label_num,0))
+		p_node.set_value(0)
+		p_node.set_parent(parent)
+		return p_node
+
+	def prop(self, data, label):
+		label_num = set(label)
+		# In a prop tree we use attr to count all labels passed through and use value to count the total visit number
+		self.root.set_data_count(label_num)
+		for d, label in zip(data, label):
+			curr_tree = self.root
+			while True:
+				# Update the prop data
+				curr_tree.update_data_count(label)
+				if curr_tree.attr == 'leaf':
+					break
+				else:
+					attr, split = (curr_tree.attr, curr_tree.value)
+					if d[attr] > split:
+						curr_tree = curr_tree.left
+						if curr_tree.data_count == None: curr_tree.set_data_count(label_num)
+					else:
+						curr_tree = curr_tree.right
+						if curr_tree.data_count == None: curr_tree.set_data_count(label_num)					
+	def clear_prune_history(self, node_):
+		node_.clear_visit_history()
+		if node_.attr == 'leaf':
+			return
+		else:
+			self.clear_prune_history(node_.left)
+			self.clear_prune_history(node_.right)
+
+	def prune(self, data, label):
+		self.prop(data, label)
+		leafs = self.leafs
+		while True:
+			new_leafs = []
+			pruned = False
+			for leaf in leafs:
+				parent = leaf.parent
+				if parent.left == None:
+					#parent left == None checks if the children had been pruned
+					continue
+				elif parent == None or parent.left.attr != 'leaf' or parent.right.attr != 'leaf':
+					new_leafs.append(leaf)
+				else: #Now both sides of the parent should be leafs
+					# If no testing data had passed through a leaf. we treat it as zero acc
+					l_data = [0] if parent.left.data_count == None else parent.left.data_count.values()
+					r_data = [0] if parent.right.data_count == None else parent.right.data_count.values()
+					child_acc = float(max(l_data)+max(r_data))/max(sum(l_data)+sum(r_data),1)
+					p_data = [0] if parent.data_count == None else parent.data_count.values()
+					parent_acc = float(max(p_data))/max(sum(p_data),1)
+					# Check if we prune
+					if parent_acc >= child_acc and parent_acc != 0:
+						pruned = True
+						parent.clear_child()
+						new_val = list(parent.data_count.keys())[list(p_data).index(max(p_data))]
+						parent.set_value(new_val)
+						parent.set_attr('leaf')
+						new_leafs.append(parent)
+					else:
+						new_leafs.append(leaf)
+			leafs = new_leafs
+			if not pruned:
+				break
+		self.leafs = leafs
+		self.clear_prune_history(self.root)
+	
+	def draw(self):
+		"""
+		Usage: draw(tree)
+		Description: This function is to draw the tree
+		Input: The tree
+		Outputs: No output
+		"""
+		total_leaf = get_node_num(self.root)
+		draw_node(self.root, 0, self.depth, self.depth, total_leaf)
