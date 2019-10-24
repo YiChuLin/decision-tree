@@ -160,7 +160,7 @@ class Node():
 		Args:
 		  value (int or float): the value to be set
 		"""
-		assert (type(value) == int or type(value) == float)
+		assert (type(value) == int or type(value) == float or type(value) == np.float64)
 		self.value = value
 	def clear_child(self):
 		"""clear the node's child"""
@@ -177,7 +177,7 @@ class Node():
 		Args:
 		  label : a label that should be an element of label_num used in set_data_count(label_num)
 		"""
-		assert(label in data_count.keys())
+		assert(label in self.data_count.keys())
 		self.data_count[label] += 1
 	def clear_visit_history(self):
 		"""set data_count to None"""
