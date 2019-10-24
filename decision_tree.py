@@ -22,6 +22,12 @@ def entropy(label):
 
 #get the depth of each node
 def get_node_num(node_):
+	"""
+	Usage: n = get_node_num(node)
+	Description: Get the number of descendents of the node
+	Input: a node which from class Node
+	Output: number of descendents 
+	"""
 	num_leafs = 0
 	if node_.left == None and node_.right == None:
 		num_leafs += 1
@@ -32,6 +38,12 @@ def get_node_num(node_):
 	return num_leafs
 
 def get_node_depth(node_):
+	"""
+	Usage: n = get_node_depth(node)
+	Description: Get the depth of the node
+	Input: a node which from class Node
+	Output: The depth of the node 
+	"""
 	max_depth = 0
 	if node_.attr == 'leaf':
 		max_depth = 1
@@ -55,6 +67,12 @@ def get_node_depth(node_):
 
 
 def draw_node(node_, x, d, depth, total_leaf):
+	"""
+	Usage: x,d = draw_node(node_, x, d, depth, total_leaf)
+	Description: Get the position of node base on its parent's position and depth and the number of descentdents
+	Input: a node which from class Node, position of parent, the depth of parent, and the tolal number of leaf in this tree
+	Output: the position of this node and the depth of this node 
+	"""
 	node_num = get_node_num(node_)
 	node_depth = get_node_depth(node_)
 	move = 1+node_num*node_depth
@@ -332,5 +350,11 @@ class Decision_tree():
 		self.clear_prune_history(self.root)
 	
 	def draw(self):
+		"""
+		Usage: draw(tree)
+		Description: This function is to draw the tree
+		Input: The tree
+		Outputs: No output
+		"""
 		total_leaf = get_node_num(self.root)
 		draw_node(self.root, 0, self.depth, self.depth, total_leaf)
