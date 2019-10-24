@@ -1,19 +1,8 @@
-from decision_tree import *
+import sys
+
 import numpy as np
 
-
-# Load the datasets
-filepath = 'wifi_db/'
-filename = 'clean_dataset.txt'
-data = np.loadtxt(filepath+filename)
-
-np.random.shuffle(data)
-
-x_train = data[:1500, :-1]
-y_train = data[:1500, -1]
-
-x_test = data[1500:, :-1]
-y_test = data[1500:, -1]
+from decision_tree import *
 
 
 def evaluate(predicted_label, true_label):
@@ -31,9 +20,9 @@ def evaluate(predicted_label, true_label):
     return accuracy
 
 
-def cross_validate(train_val_data, k_fold=10):
+def tree_cross_validate(train_val_data, k_fold=10):
     """
-    perform k-fold cross validation on learn_decision_tree
+    perform k-fold cross validation on decision tree
 	iterable
 
     Args:
@@ -51,12 +40,6 @@ def cross_validate(train_val_data, k_fold=10):
     assert(k_fold > 0 and k_fold <= num_row)
 
     np.random.shuffle(train_val_data)
-
-    # compute the index of a split of train_val_data
-    # def k_range(k_head, k_tail): 
-    #     head=int(num_row*k_head/k_fold)
-    #     tail=int(num_row*k_tail/k_fold)
-    #     return np.arange(head, tail).astype(int)
     data_splits=np.vsplit(train_val_data,k_fold)
 
     for k in range(0, k_fold):
@@ -103,6 +86,41 @@ def compute_confusion_matrix(tree, test_data, num_label):
     return confusion_matrix
 
 
+def compute_precision(confusion_matrix):
+	"""
+    compute precision on each class
+
+    Args:
+            confusion_matrix (np.ndarry): square 2-D matrix
+	Outputs:
+	    precision_vec (np.array,lenghth=confusion_matrix's width)
+	"""
+	assert(type(confusion_matrix)==np.ndarray)
+	assert(len(confusion_matrix.shape)==2)
+	assert(confusion_matrix.shape[0]==confusion_matrix.shape[1])
+
+	true_positive_vec=np.diag(confusion_matrix)
+	return true_positive_vec/confusion_matrix.sum(axis=1)
+
+
+def compute_recall(confusion_matrix):
+	"""
+    compute recall on each class
+
+    Args:
+            confusion_matrix (np.ndarry): square 2-D matrix
+
+	Outputs:
+	    f_measure (np.array,lenghth=confusion_matrix's width)
+	"""
+	assert(type(confusion_matrix)==np.ndarray)
+	assert(len(confusion_matrix.shape)==2)
+	assert(confusion_matrix.shape[0]==confusion_matrix.shape[1])
+
+	true_positive_vec=np.diag(confusion_matrix)
+	return confusion_matrix.sum(axis=0)
+
+
 def compute_f_measure(confusion_matrix,beta=1.0):
 	"""
     compute f_measure over a confusion matrix
@@ -117,12 +135,10 @@ def compute_f_measure(confusion_matrix,beta=1.0):
 	assert(len(confusion_matrix.shape)==2)
 	assert(confusion_matrix.shape[0]==confusion_matrix.shape[1])
 	assert(type(beta)==float or type(beta)==int)
-	
-	true_positive_vec=np.diag(confusion_matrix)
 
-	precision_vec=true_positive_vec/confusion_matrix.sum(axis=1)
+	precision_vec=compute_precision(confusion_matrix)
 
-	recall_vec=true_positive_vec/confusion_matrix.sum(axis=0)
+	recall_vec=compute_recall(confusion_matrix)
 
 	f_measure=(1+beta**2)*(precision_vec*recall_vec)/(beta**2*precision_vec+recall_vec)
 
@@ -130,27 +146,30 @@ def compute_f_measure(confusion_matrix,beta=1.0):
 
 
 def main():
+	#assert(len(sys.argv)==2)
+
+	# load data from file and shuffle
+	#train_val_data = np.loadtxt(sys.argv[1])
+	train_val_data = np.loadtxt('wifi_db/clean_dataset.txt')
+	np.random.shuffle(train_val_data)
+
+	for i,(_,confusion_matrix) in enumerate(tree_cross_validate(train_val_data)):
+		print(str(i)+'-th cross validation:')
+		print('    precision:')
+		print(compute_precision(confusion_matrix))
+		print('    recall:')
+		print(compute_recall(confusion_matrix))
+		print('    f1 measure:')
+		print(compute_f_measure(confusion_matrix))
+
+	print('using all data to train a decision tree')
 	tree = Decision_tree()
-	tree.train(x_train, y_train)
-
-	y_pred = tree.classify(x_test)
-	print("Accuracy: " + str(evaluate(y_pred, y_test)))
-
-	tree.draw()
-
-	tree.prune(x_test, y_test)
-	y_pred = tree.classify(x_test)
-	print("Accuracy: " + str(evaluate(y_pred, y_test)))
-
-	confusion_matrix = compute_confusion_matrix(tree, data, len(set(y_test)))
-	print(confusion_matrix)
-
-	tree.draw()
+	tree.train(train_val_data[:, :-1], train_val_data[:, -1])
+	tree.prune(train_val_data[:, :-1], train_val_data[:, -1])
+	#tree.draw()
 
 
 if __name__=="__main__":
-#def main2():
-	for _,confusion_matrix in cross_validate(data,5):
-		print(np.trace(confusion_matrix)/np.sum(confusion_matrix))
+	main()
 
 
