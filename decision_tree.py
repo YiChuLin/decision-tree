@@ -3,13 +3,14 @@ import matplotlib.pyplot as plt
 
 # Define essential functions for training a decision tree
 def entropy(label):
+	"""Compute the entropy given a list of labels
+	Args:
+	  label (list of integers or numpy array with size (n,)): A list of labels
+	Returns:
+	  entropy (float): enropy of the given list of labels
 	"""
-	Usage: H = entropy(label)
-	Description: This function calculates the entropy given a data set assuming the last column represents the labels
-	Input: 2d numpy array
-	Output: single value representing the entropy
-	"""
-	
+	assert (type(label) == np.ndarray or type(label) == list)
+
 	labels = set(label)
 	label_num = len(label)
 	instances = dict.fromkeys(labels,0)
@@ -19,7 +20,7 @@ def entropy(label):
 	sep_entropy = [p*np.log2(p) for p in prob]
 	return -sum(sep_entropy)
 
-	#get the depth of each node
+#get the depth of each node
 def get_node_num(node_):
 	num_leafs = 0
 	if node_.left == None and node_.right == None:
@@ -77,7 +78,32 @@ def draw_node(node_, x, d, depth, total_leaf):
 
 # Define the decision tree class
 class Node():
+	"""Node that serves as basic building blocks for the decision tree
+	
+	The node contains the neccesary attributes of splitting a decision tree.
+	Node() class is also designed to enable pruning process to run smoothly.
+	
+	Attributes
+		attr: The attribute of which to split a decision tree. The type would depend on the attributes
+		value: An integer that indicates the value to split
+		parent: A Node object which is the parent of this node
+		left: A Node object which is the left child of this node
+		right: A Node object which is the right child of this node
+		data_count: A dictionary the maps the labels and the number of occurrences that a data with such label visited a tree. This is only used in pruning and would be set to None if no data had visited or pruning ended.
+
+	Functions
+		__init__(self): initialize attributes
+		set_parent(self, node_): set current node's parent to node_
+		add_child(self, node_, direction): set current node's child at given direction to node_
+		set_attr(self, attr): set the node's attribute
+		set_value(self, value): set the node's value
+		clear_child(self): clear the node's child
+		set_data_count(self, label_num): initialize the data_count dictionary
+		update_data_count(self, label): update the data_count with the given label
+		clear_visit_history(self): set data_count to None
+	"""
 	def __init__(self):
+		"""initialize attributes"""
 		self.attr = None
 		self.value = None
 		self.parent = None
@@ -86,30 +112,72 @@ class Node():
 		# The following variable are used for pruning
 		self.data_count = None
 	def set_parent(self, node_):
+		"""set current node's parent to node_
+		Args:
+		  node_ (Node): the node that would be set to be the parent 
+		"""
+		assert (isinstance(node_, Node))
 		self.parent = node_
 	def add_child(self, node_, direction):
+		"""set current node's child at given direction to node_
+		Args:
+		  node_       (Node): the node that would be set to be the child
+		  direction (string): 'left' or 'right'
+		"""
+		assert (direction == 'left' or direction == 'right')
+		assert (isinstance(node_, Node))
 		if direction == "left":
 			self.left = node_
 		elif direction == "right":
 			self.right = node_
-		else:
-			print("The direction of the child should be either left or right.")
+
 	def set_attr(self, attr):
+		"""set the node's attribute
+		Args:
+		  attr	: The attribute to be set
+		"""
 		self.attr = attr
 	def set_value(self, value):
+		"""set the node's value
+		Args:
+		  value (int or float): the value to be set
+		"""
+		assert (type(value) == int or type(value) == float)
 		self.value = value
 	def clear_child(self):
+		"""clear the node's child"""
 		self.left = None
 		self.right = None
 	def set_data_count(self, label_num):
+		"""initialize the data_count dictionary
+		Args:
+		  label_num (set): A set of all possible labels
+		"""
 		self.data_count = dict.fromkeys(label_num,0)
 	def update_data_count(self, label):
+		"""update the data_count with the given label
+		Args:
+		  label : a label that should be an element of label_num used in set_data_count(label_num)
+		"""
+		assert(label in data_count.keys())
 		self.data_count[label] += 1
 	def clear_visit_history(self):
+		"""set data_count to None"""
 		self.data_count = None
 
 
 class Decision_tree():
+	"""Decision_tree that can be trained and pruned
+	
+	Attributes
+		root  (Node): The root Node of the decision_tree (Initialized to None)
+		depth  (int): The depth of the initially trained decision_tree (Initialized to 0). Does not change after pruning
+		leafs (list of Nodes): A list of Nodes that is the leafs of the tree
+	Functions
+		__init__(self): initialize attributes
+		find_split(self, data, label): find the best split given the data and label
+		decision_tree_learning(data, label, d = 0): learn the decision tree
+	"""
 	def __init__(self):
 		self.root = None
 		self.depth = 0
@@ -180,7 +248,6 @@ class Decision_tree():
 		label = []
 		for d in data:
 			tree = self.root
-			at_leaf = False
 			while True:
 				attr = tree.attr
 				if attr == "leaf":
