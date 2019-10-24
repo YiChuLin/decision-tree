@@ -103,6 +103,32 @@ def compute_confusion_matrix(tree, test_data, num_label):
     return confusion_matrix
 
 
+def compute_f_measure(confusion_matrix,beta=1.0):
+	"""
+    compute f_measure over a confusion matrix
+
+    Args:
+            confusion_matrix (np.ndarry): square 2-D matrix
+	        beta (float): weight of precision
+	Outputs:
+	    f_measure (np.array,lenghth=confusion_matrix's width): f1_measure on each class
+	"""
+	assert(type(confusion_matrix)==np.ndarray)
+	assert(len(confusion_matrix.shape)==2)
+	assert(confusion_matrix.shape[0]==confusion_matrix.shape[1])
+	assert(type(beta)==float or type(beta)==int)
+	
+	true_positive_vec=np.diag(confusion_matrix)
+
+	precision_vec=true_positive_vec/confusion_matrix.sum(axis=1)
+
+	recall_vec=true_positive_vec/confusion_matrix.sum(axis=0)
+
+	f_measure=(1+beta**2)*(precision_vec*recall_vec)/(beta**2*precision_vec+recall_vec)
+
+	return f_measure
+
+
 def main():
 	tree = Decision_tree()
 	tree.train(x_train, y_train)
@@ -120,6 +146,7 @@ def main():
 	print(confusion_matrix)
 
 	tree.draw()
+
 
 if __name__=="__main__":
 #def main2():
