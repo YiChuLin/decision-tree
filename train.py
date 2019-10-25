@@ -1,5 +1,6 @@
 import decision_tree as dt
 import numpy as np
+import sys
 
 
 def evaluate(predicted_label, true_label):
@@ -98,66 +99,93 @@ def compute_confusion_matrix(tree, test_data, num_label):
     return confusion_matrix
 
 
-def compute_f_measure(confusion_matrix,beta=1.0):
-	"""
+def compute_measures(confusion_matrix,beta=1):
+    """
     compute f_measure over a confusion matrix
 
     Args:
             confusion_matrix (np.ndarry): square 2-D matrix
-	        beta (float): weight of precision
-	Outputs:
-	    f_measure (np.array,lenghth=confusion_matrix's width): f1_measure on each class
-	"""
-	assert(type(confusion_matrix)==np.ndarray)
-	assert(len(confusion_matrix.shape)==2)
-	assert(confusion_matrix.shape[0]==confusion_matrix.shape[1])
-	assert(type(beta)==float or type(beta)==int)
-	
-	true_positive_vec=np.diag(confusion_matrix)
+            beta (int or float): weight of precision for computing f measures
+    Outputs:
+        measures (dict of :(np.array,lenghth=confusion_matrix's width)): {'precision':precision, 'recall':recall, 'f_measure':f_measure}
+    """
+    assert(type(confusion_matrix)==np.ndarray)
+    assert(len(confusion_matrix.shape)==2)
+    assert(confusion_matrix.shape[0]==confusion_matrix.shape[1])
+    assert(type(beta)==float or type(beta)==int)
 
-	precision_vec=true_positive_vec/confusion_matrix.sum(axis=1)
+    acc = np.trace(confusion_matrix)/np.sum(confusion_matrix)
 
-	recall_vec=true_positive_vec/confusion_matrix.sum(axis=0)
+    true_positive_vec=np.diag(confusion_matrix)
 
-	f_measure=(1+beta**2)*(precision_vec*recall_vec)/(beta**2*precision_vec+recall_vec)
+    precision_vec=true_positive_vec/confusion_matrix.sum(axis=0)
 
-	return f_measure
+    recall_vec=true_positive_vec/confusion_matrix.sum(axis=1)
 
+    f_measure=(1+beta**2)*(precision_vec*recall_vec)/(beta**2*precision_vec+recall_vec)
+    measures = {'precision':precision_vec, 'recall':recall_vec, 'f_measure':f_measure, 'acc':acc}
+    return measures
+
+def print_measures(measures):
+    """print out the measures computed by compute_measures(confusion_matrix)"""
+    assert(type(measures) == dict)
+    assert('precision' in measures and 'recall' in measures and 'f_measure' in measures and 'acc' in measures)
+    pr = measures['precision']
+    print('Precision:')
+    for i,p in enumerate(pr):
+        print('        Class {}: {:.3f}'.format(i+1,p))
+    re = measures['recall']
+    print('Recall:')
+    for i,r in enumerate(re):
+        print('        Class {}: {:.3f}'.format(i+1,r))
+    f_m = measures['f_measure']
+    print('F Score:')
+    for i,f in enumerate(f_m):
+        print('        Class {}: {:.3f}'.format(i+1,f))
+    print('The average accuracy = {:.3f}'.format(measures['acc']))
 
 def main():
     # Load the datasets
-    filepath = 'wifi_db/'
-    filename = 'clean_dataset.txt'
-    data = np.loadtxt(filepath+filename)
-
+    assert len(sys.argv) == 2, 'Usage: python train.py path/to/data/file'
+    try:
+        data = np.loadtxt(sys.argv[1])
+    except:
+        print('Please give the correct path to the dataset')
+        exit()
     np.random.shuffle(data)
 
-    x_train = data[:1500, :-1]
-    y_train = data[:1500, -1]
-
-    x_test = data[1500:, :-1]
-    y_test = data[1500:, -1]
-
     tree = dt.Decision_tree()
-    #tree.train(x_train, y_train)
 
-    #y_pred = tree.classify(x_test)
-    #print("Accuracy: " + str(evaluate(y_pred, y_test)))
+    #Initialize confusion matrix
+    un_total_cm = None
+    pr_total_cm = None
+    for _,cm_dict in cross_validate(tree, data, 5, compare_prune = True):
+        un_cm = cm_dict['unpruned']
+        un_total_cm = un_cm if un_total_cm is None else un_total_cm + un_cm
+        pr_cm = cm_dict['pruned']
+        pr_total_cm = pr_cm if pr_total_cm is None else pr_total_cm + pr_cm
+    un_measures = compute_measures(un_total_cm)
+    pr_measures = compute_measures(pr_total_cm)
+    print('Performace on the dataset: '+sys.argv[1])
+    print('-------------Unpruned Average Performance----------------------')
+    print_measures(un_measures)
+    print('--------------Pruned Average Performance-----------------------')
+    print_measures(pr_measures)
+    # Visualize the tree while training on the whole training set
+    split_ratio = 0.8
+    train_num = int(data.shape[0]*split_ratio)
+    x_train = data[:train_num, :-1]
+    y_train = data[:train_num, -1]
 
-    #tree.draw()
+    x_test = data[train_num:, :-1]
+    y_test = data[train_num:, -1]
+    tree.train(x_train, y_train)
 
-    #tree.prune(x_test, y_test)
-    #y_pred = tree.classify(x_test)
-    #print("Accuracy: " + str(evaluate(y_pred, y_test)))
+    tree.draw()
 
-    #confusion_matrix = compute_confusion_matrix(tree, data, len(set(y_test)))
-    #print(confusion_matrix)
+    tree.prune(x_test, y_test)
 
-    #tree.draw()
-    for _,cm_dict in cross_validate(tree, data, 5):
-        confusion_matrix = cm_dict['unpruned']
-        print(np.trace(confusion_matrix)/np.sum(confusion_matrix))
-
+    tree.draw()
 
 if __name__=="__main__":
     main()
