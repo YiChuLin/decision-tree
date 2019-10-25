@@ -218,6 +218,8 @@ class Decision_tree():
 		  l_set	(tuple of the form:(data, label)): A tuple containing the data and labels that is splitted to the left
 		  r_set	(tuple of the form:(data, label)): A tuple containing the data and labels that is splitted to the right
 		""" 
+		assert (type(data) == np.ndarray and len(data.shape) == 2)
+		assert(type(label) == np.ndarray or type(label) == list)
 		data_num, attr_num = data.shape
 
 		info_gain = float('-inf')
@@ -262,6 +264,9 @@ class Decision_tree():
 		  d               				(int): The current record of depth
 		  leaf_l               (list of Node): A list of current leafs of the tree
 		"""
+		assert (type(data) == np.ndarray and len(data.shape) == 2)
+		assert(type(label) == np.ndarray or type(label) == list)
+		assert(type(d) == int)
 		node_ = Node()
 		label_num = len(set(label))
 		if label_num == 1:
@@ -287,6 +292,8 @@ class Decision_tree():
 		  data     (numpy array with size (n,num_of_attributes)): Data used for training
 		  label (list of integers or numpy array with size (n,)): A list of labels
 		"""
+		assert (type(data) == np.ndarray and len(data.shape) == 2)
+		assert(type(label) == np.ndarray or type(label) == list)
 		self.root, self.depth, self.leafs = self.decision_tree_learning(data, label)
 
 	def classify(self, data):
@@ -296,6 +303,7 @@ class Decision_tree():
 		Returns:
 		  label 							   (list of int): Predicted labels
 		"""
+		assert (type(data) == np.ndarray)
 		label = []
 		for d in data:
 			tree = self.root
@@ -318,6 +326,8 @@ class Decision_tree():
 		  data     (numpy array with size (n,num_of_attributes)): Data to be propogated
 		  label (list of integers or numpy array with size (n,)): The corresponding labels for the data 		
 		"""
+		assert (type(data) == np.ndarray and len(data.shape) == 2)
+		assert(type(label) == np.ndarray or type(label) == list)
 		label_num = set(label)
 		# In a prop tree we use attr to count all labels passed through and use value to count the total visit number
 		self.root.set_data_count(label_num)
@@ -342,6 +352,7 @@ class Decision_tree():
 		Args:
 		  node_    (Node): The Node to be cleared. All descendants of this node would also be cleared.
 		"""
+		assert(isinstance(node_, Node))
 		node_.clear_visit_history()
 		if node_.attr == 'leaf':
 			return
@@ -355,6 +366,8 @@ class Decision_tree():
 		  data     (numpy array with size (n,num_of_attributes)): Data to be used for pruning
 		  label (list of integers or numpy array with size (n,)): The corresponding labels for the data 
 		"""
+		assert (type(data) == np.ndarray and len(data.shape) == 2)
+		assert (type(label) == np.ndarray or type(label) == list)
 		self.prop(data, label)
 		leafs = self.leafs
 		while True:
