@@ -194,18 +194,30 @@ class Decision_tree():
 	Functions
 		__init__(self): initialize attributes
 		find_split(self, data, label): find the best split given the data and label
-		decision_tree_learning(data, label, d = 0): learn the decision tree
+		decision_tree_learning(data, label, d = 0): learn the decision tree recurrsively
+		train(self, data, label): train the tree by calling decision_tree_learning
+		classify(self, data): classify test data based on trained results
+		prop(self, data, label): propogate and record data that passed through each node
+		clear_prune_history(self, node_): clear the propogated data after pruning(recurrsive)
+		prune(self, data, label): prune the tree with given data and label
+		draw(self): Visualize the tree
 	"""
 	def __init__(self):
+		"""Initialize attributes"""
 		self.root = None
 		self.depth = 0
 		self.leafs = []
 	def find_split(self, data, label):
-		"""
-		Usage:
-		Description:
-		Outputs:
-		"""
+		"""Find the best split attribute and value for the given data and label.
+		Args:
+		  data     (numpy array with size (n,num_of_attributes)): Data used for training
+		  label (list of integers or numpy array with size (n,)): A list of labels
+		Returns:
+		  node_attr                         (int): The attribute used for splitting
+		  node_split               (int or float): The value used for splitting
+		  l_set	(tuple of the form:(data, label)): A tuple containing the data and labels that is splitted to the left
+		  r_set	(tuple of the form:(data, label)): A tuple containing the data and labels that is splitted to the right
+		""" 
 		data_num, attr_num = data.shape
 
 		info_gain = float('-inf')
@@ -240,6 +252,16 @@ class Decision_tree():
 		return node_attr, node_split, l_set, r_set
 
 	def decision_tree_learning(self, data, label, d = 0):
+		"""learn the decision tree recurrsively
+		Args:
+		  data     (numpy array with size (n,num_of_attributes)): Data used for training
+		  label (list of integers or numpy array with size (n,)): A list of labels
+		  d                                      (int default:0): The current depth of the tree
+		Returns:
+		  node_                        (Node): The splitted node
+		  d               				(int): The current record of depth
+		  leaf_l               (list of Node): A list of current leafs of the tree
+		"""
 		node_ = Node()
 		label_num = len(set(label))
 		if label_num == 1:
@@ -260,9 +282,20 @@ class Decision_tree():
 			return node_, d, leaf_l
 
 	def train(self, data, label):
+		"""train the tree by calling decision_tree_learning
+		Args:
+		  data     (numpy array with size (n,num_of_attributes)): Data used for training
+		  label (list of integers or numpy array with size (n,)): A list of labels
+		"""
 		self.root, self.depth, self.leafs = self.decision_tree_learning(data, label)
 
 	def classify(self, data):
+		"""classify test data based on trained results
+		Args:
+		  data (numpy array with size (n,num_of_attributes)): Data to be classified
+		Returns:
+		  label 							   (list of int): Predicted labels
+		"""
 		label = []
 		for d in data:
 			tree = self.root
@@ -279,14 +312,12 @@ class Decision_tree():
 						tree = tree.right
 		return label
 
-	def create_prop_node(self, label_num, parent=None):
-		p_node = Node()
-		p_node.set_attr(dict.fromkeys(label_num,0))
-		p_node.set_value(0)
-		p_node.set_parent(parent)
-		return p_node
-
 	def prop(self, data, label):
+		"""propogate and record data that passed through each node
+		Args:
+		  data     (numpy array with size (n,num_of_attributes)): Data to be propogated
+		  label (list of integers or numpy array with size (n,)): The corresponding labels for the data 		
+		"""
 		label_num = set(label)
 		# In a prop tree we use attr to count all labels passed through and use value to count the total visit number
 		self.root.set_data_count(label_num)
@@ -304,8 +335,13 @@ class Decision_tree():
 						if curr_tree.data_count == None: curr_tree.set_data_count(label_num)
 					else:
 						curr_tree = curr_tree.right
-						if curr_tree.data_count == None: curr_tree.set_data_count(label_num)					
+						if curr_tree.data_count == None: curr_tree.set_data_count(label_num)
+
 	def clear_prune_history(self, node_):
+		"""clear the propogated data after pruning(recurrsive)
+		Args:
+		  node_    (Node): The Node to be cleared. All descendants of this node would also be cleared.
+		"""
 		node_.clear_visit_history()
 		if node_.attr == 'leaf':
 			return
@@ -314,6 +350,11 @@ class Decision_tree():
 			self.clear_prune_history(node_.right)
 
 	def prune(self, data, label):
+		"""prune the tree with given data and label
+		Args:
+		  data     (numpy array with size (n,num_of_attributes)): Data to be used for pruning
+		  label (list of integers or numpy array with size (n,)): The corresponding labels for the data 
+		"""
 		self.prop(data, label)
 		leafs = self.leafs
 		while True:
