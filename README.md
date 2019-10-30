@@ -29,7 +29,7 @@ Below is the output to result.txt of running
 ```
 python train.py wifi_db/clean_dataset.txt > result.txt
 ```
-
+results.txt:
 ```
 Performace on the dataset: wifi_db/noisy_dataset.txt
 -------------Unpruned Average Performance----------------------
@@ -69,7 +69,9 @@ The average accuracy = 0.861
 ```
 
 The generated figures are as follows:
+Unpruned.png
 ![Unpruned.png](img/Unpruned.png?raw=true "Unpruned.png")
+Pruned.png
 ![Pruned.png](img/Pruned.png?raw=true "Pruned.png")
 
 ## Authors
