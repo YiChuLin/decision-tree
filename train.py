@@ -2,20 +2,6 @@ from decision_tree import *
 import numpy as np
 
 
-# Load the datasets
-filepath = 'wifi_db/'
-filename = 'clean_dataset.txt'
-data = np.loadtxt(filepath+filename)
-
-np.random.shuffle(data)
-
-x_train = data[:1500, :-1]
-y_train = data[:1500, -1]
-
-x_test = data[1500:, :-1]
-y_test = data[1500:, -1]
-
-
 def evaluate(predicted_label, true_label):
     """
     Evaluate accuracy on predicted label given true label
@@ -130,13 +116,26 @@ def compute_f_measure(confusion_matrix,beta=1.0):
 
 
 def main():
+	# Load the datasets
+	filepath = 'wifi_db/'
+	filename = 'clean_dataset.txt'
+	data = np.loadtxt(filepath+filename)
+
+	np.random.shuffle(data)
+
+	x_train = data[:1500, :-1]
+	y_train = data[:1500, -1]
+
+	x_test = data[1500:, :-1]
+	y_test = data[1500:, -1]
+
 	tree = Decision_tree()
 	tree.train(x_train, y_train)
 
 	y_pred = tree.classify(x_test)
 	print("Accuracy: " + str(evaluate(y_pred, y_test)))
 
-	tree.draw()
+	tree.draw('test1.png')
 
 	tree.prune(x_test, y_test)
 	y_pred = tree.classify(x_test)
@@ -144,13 +143,13 @@ def main():
 
 	confusion_matrix = compute_confusion_matrix(tree, data, len(set(y_test)))
 	print(confusion_matrix)
-
-	tree.draw()
+	for _,confusion_matrix in cross_validate(data,5):
+		print(np.trace(confusion_matrix)/np.sum(confusion_matrix))
+	tree.draw('test2.png')
 
 
 if __name__=="__main__":
-#def main2():
-	for _,confusion_matrix in cross_validate(data,5):
-		print(np.trace(confusion_matrix)/np.sum(confusion_matrix))
+	main()
+
 
 
