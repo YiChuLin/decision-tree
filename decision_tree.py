@@ -369,6 +369,7 @@ class Decision_tree():
 		assert (type(data) == np.ndarray and len(data.shape) == 2)
 		assert (type(label) == np.ndarray or type(label) == list)
 		self.prop(data, label)
+		zero_dict = dict.fromkeys(set(label),0)
 		leafs = self.leafs
 		while True:
 			new_leafs = []
@@ -382,9 +383,9 @@ class Decision_tree():
 					new_leafs.append(leaf)
 				else: #Now both sides of the parent should be leafs
 					# If no testing data had passed through a leaf. we treat it as zero acc
-					l_data = [0] if parent.left.data_count == None else parent.left.data_count.values()
-					r_data = [0] if parent.right.data_count == None else parent.right.data_count.values()
-					child_acc = float(max(l_data)+max(r_data))/max(sum(l_data)+sum(r_data),1)
+					l_data = zero_dict if parent.left.data_count == None else parent.left.data_count
+					r_data = zero_dict if parent.right.data_count == None else parent.right.data_count
+					child_acc = float(l_data[int(parent.left.value)]+r_data[int(parent.right.value)])/max(sum(l_data.values())+sum(r_data.values()),1)
 					p_data = [0] if parent.data_count == None else parent.data_count.values()
 					parent_acc = float(max(p_data))/max(sum(p_data),1)
 					# Check if we prune
