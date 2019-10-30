@@ -69,6 +69,7 @@ The average accuracy = 0.861
 ```
 
 The generated figures are as follows:
+
 Unpruned.png
 ![Unpruned.png](img/Unpruned.png?raw=true "Unpruned.png")
 Pruned.png
