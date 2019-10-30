@@ -78,4 +78,4 @@ Pruned.png
 ## Authors
 - Arvin Lin (al4419@imperial.ac.uk)
 - YiChong Chen
-- 
+- Zhouyang Xie
