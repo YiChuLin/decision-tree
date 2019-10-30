@@ -66,7 +66,7 @@ def get_node_depth(node_):
 
 
 
-def draw_node(node_, x, d, depth, total_leaf):
+def draw_node(fig, node_, x, d, depth, total_leaf):
 	"""
 	Usage: x,d = draw_node(node_, x, d, depth, total_leaf)
 	Description: Get the position of node base on its parent's position and depth and the number of descentdents
@@ -80,8 +80,8 @@ def draw_node(node_, x, d, depth, total_leaf):
 		plt.text(x, d, str(node_.value), fontsize= 10)
 		return x, d
 	else:
-		x_l, d_l = draw_node(node_.left, x+move, d-1, depth, total_leaf)
-		x_r, d_r = draw_node(node_.right, x-move, d-1, depth, total_leaf)
+		x_l, d_l = draw_node(fig, node_.left, x+move, d-1, depth, total_leaf)
+		x_r, d_r = draw_node(fig, node_.right, x-move, d-1, depth, total_leaf)
 		plt.plot([x, x_l], [d, d_l], 'b')
 		plt.scatter([x, x_l], [d, d_l], color = 'r', s = 10)
 		plt.plot([x, x_r], [d, d_r], 'b')
@@ -89,7 +89,7 @@ def draw_node(node_, x, d, depth, total_leaf):
 		plt.text(x, d, str(node_.attr)+"<"+str(node_.value),fontsize = 10)
 		if d == depth:
 			plt.axis('off')
-			plt.show()
+			return fig
 		else:
 			return x, d
 
@@ -403,7 +403,7 @@ class Decision_tree():
 		self.leafs = leafs
 		self.clear_prune_history(self.root)
 	
-	def draw(self):
+	def draw(self, filename):
 		"""
 		Usage: draw(tree)
 		Description: This function is to draw the tree
@@ -411,4 +411,7 @@ class Decision_tree():
 		Outputs: No output
 		"""
 		total_leaf = get_node_num(self.root)
-		draw_node(self.root, 0, self.depth, self.depth, total_leaf)
+		fig = plt.figure(figsize=(32,9))
+		fig = draw_node(fig, self.root, 0, self.depth, self.depth, total_leaf)
+		fig.savefig(filename)
+		#plt.clf()

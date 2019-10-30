@@ -181,13 +181,14 @@ def main():
     y_test = data[train_num:, -1]
     tree.train(x_train, y_train)
 
-    tree.draw()
+    tree.draw("Unpruned.png")
 
     tree.prune(x_test, y_test)
 
-    tree.draw()
+    tree.draw("Pruned.png")
 
 if __name__=="__main__":
-    main()
+	main()
+
 
 
