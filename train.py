@@ -20,7 +20,7 @@ def evaluate(predicted_label, true_label):
 
 def cross_validate(model, train_val_data, k_fold=10, compare_prune = False):
     """
-    perform k-fold cross validation on learn_decision_tree
+    perform k-fold cross validation on decision tree
 	iterable
 
     Args:
@@ -40,12 +40,6 @@ def cross_validate(model, train_val_data, k_fold=10, compare_prune = False):
     assert(k_fold > 0 and k_fold <= num_row)
 
     np.random.shuffle(train_val_data)
-
-    # compute the index of a split of train_val_data
-    # def k_range(k_head, k_tail): 
-    #     head=int(num_row*k_head/k_fold)
-    #     tail=int(num_row*k_tail/k_fold)
-    #     return np.arange(head, tail).astype(int)
     data_splits=np.vsplit(train_val_data,k_fold)
 
     for k in range(0, k_fold):
