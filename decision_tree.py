@@ -66,7 +66,7 @@ def get_node_depth(node_):
 
 
 
-def draw_node(node_, x, d, depth, total_leaf):
+def draw_node(fig, node_, x, d, depth, total_leaf):
 	"""
 	Usage: x,d = draw_node(node_, x, d, depth, total_leaf)
 	Description: Get the position of node base on its parent's position and depth and the number of descentdents
@@ -80,8 +80,8 @@ def draw_node(node_, x, d, depth, total_leaf):
 		plt.text(x, d, str(node_.value), fontsize= 10)
 		return x, d
 	else:
-		x_l, d_l = draw_node(node_.left, x+move, d-1, depth, total_leaf)
-		x_r, d_r = draw_node(node_.right, x-move, d-1, depth, total_leaf)
+		x_l, d_l = draw_node(fig, node_.left, x+move, d-1, depth, total_leaf)
+		x_r, d_r = draw_node(fig, node_.right, x-move, d-1, depth, total_leaf)
 		plt.plot([x, x_l], [d, d_l], 'b')
 		plt.scatter([x, x_l], [d, d_l], color = 'r', s = 10)
 		plt.plot([x, x_r], [d, d_r], 'b')
@@ -89,7 +89,7 @@ def draw_node(node_, x, d, depth, total_leaf):
 		plt.text(x, d, str(node_.attr)+"<"+str(node_.value),fontsize = 10)
 		if d == depth:
 			plt.axis('off')
-			plt.show()
+			return fig
 		else:
 			return x, d
 
@@ -160,7 +160,7 @@ class Node():
 		Args:
 		  value (int or float): the value to be set
 		"""
-		assert (type(value) == int or type(value) == float)
+		assert (type(value) == int or type(value) == float or type(value) == np.float64)
 		self.value = value
 	def clear_child(self):
 		"""clear the node's child"""
@@ -177,7 +177,7 @@ class Node():
 		Args:
 		  label : a label that should be an element of label_num used in set_data_count(label_num)
 		"""
-		assert(label in data_count.keys())
+		assert(label in self.data_count.keys())
 		self.data_count[label] += 1
 	def clear_visit_history(self):
 		"""set data_count to None"""
@@ -194,18 +194,32 @@ class Decision_tree():
 	Functions
 		__init__(self): initialize attributes
 		find_split(self, data, label): find the best split given the data and label
-		decision_tree_learning(data, label, d = 0): learn the decision tree
+		decision_tree_learning(data, label, d = 0): learn the decision tree recurrsively
+		train(self, data, label): train the tree by calling decision_tree_learning
+		classify(self, data): classify test data based on trained results
+		prop(self, data, label): propogate and record data that passed through each node
+		clear_prune_history(self, node_): clear the propogated data after pruning(recurrsive)
+		prune(self, data, label): prune the tree with given data and label
+		draw(self): Visualize the tree
 	"""
 	def __init__(self):
+		"""Initialize attributes"""
 		self.root = None
 		self.depth = 0
 		self.leafs = []
 	def find_split(self, data, label):
-		"""
-		Usage:
-		Description:
-		Outputs:
-		"""
+		"""Find the best split attribute and value for the given data and label.
+		Args:
+		  data     (numpy array with size (n,num_of_attributes)): Data used for training
+		  label (list of integers or numpy array with size (n,)): A list of labels
+		Returns:
+		  node_attr                         (int): The attribute used for splitting
+		  node_split               (int or float): The value used for splitting
+		  l_set	(tuple of the form:(data, label)): A tuple containing the data and labels that is splitted to the left
+		  r_set	(tuple of the form:(data, label)): A tuple containing the data and labels that is splitted to the right
+		""" 
+		assert (type(data) == np.ndarray and len(data.shape) == 2)
+		assert(type(label) == np.ndarray or type(label) == list)
 		data_num, attr_num = data.shape
 
 		info_gain = float('-inf')
@@ -240,6 +254,19 @@ class Decision_tree():
 		return node_attr, node_split, l_set, r_set
 
 	def decision_tree_learning(self, data, label, d = 0):
+		"""learn the decision tree recurrsively
+		Args:
+		  data     (numpy array with size (n,num_of_attributes)): Data used for training
+		  label (list of integers or numpy array with size (n,)): A list of labels
+		  d                                      (int default:0): The current depth of the tree
+		Returns:
+		  node_                        (Node): The splitted node
+		  d               				(int): The current record of depth
+		  leaf_l               (list of Node): A list of current leafs of the tree
+		"""
+		assert (type(data) == np.ndarray and len(data.shape) == 2)
+		assert(type(label) == np.ndarray or type(label) == list)
+		assert(type(d) == int)
 		node_ = Node()
 		label_num = len(set(label))
 		if label_num == 1:
@@ -260,9 +287,23 @@ class Decision_tree():
 			return node_, d, leaf_l
 
 	def train(self, data, label):
+		"""train the tree by calling decision_tree_learning
+		Args:
+		  data     (numpy array with size (n,num_of_attributes)): Data used for training
+		  label (list of integers or numpy array with size (n,)): A list of labels
+		"""
+		assert (type(data) == np.ndarray and len(data.shape) == 2)
+		assert(type(label) == np.ndarray or type(label) == list)
 		self.root, self.depth, self.leafs = self.decision_tree_learning(data, label)
 
 	def classify(self, data):
+		"""classify test data based on trained results
+		Args:
+		  data (numpy array with size (n,num_of_attributes)): Data to be classified
+		Returns:
+		  label 							   (list of int): Predicted labels
+		"""
+		assert (type(data) == np.ndarray)
 		label = []
 		for d in data:
 			tree = self.root
@@ -279,14 +320,14 @@ class Decision_tree():
 						tree = tree.right
 		return label
 
-	def create_prop_node(self, label_num, parent=None):
-		p_node = Node()
-		p_node.set_attr(dict.fromkeys(label_num,0))
-		p_node.set_value(0)
-		p_node.set_parent(parent)
-		return p_node
-
 	def prop(self, data, label):
+		"""propogate and record data that passed through each node
+		Args:
+		  data     (numpy array with size (n,num_of_attributes)): Data to be propogated
+		  label (list of integers or numpy array with size (n,)): The corresponding labels for the data 		
+		"""
+		assert (type(data) == np.ndarray and len(data.shape) == 2)
+		assert(type(label) == np.ndarray or type(label) == list)
 		label_num = set(label)
 		# In a prop tree we use attr to count all labels passed through and use value to count the total visit number
 		self.root.set_data_count(label_num)
@@ -304,8 +345,14 @@ class Decision_tree():
 						if curr_tree.data_count == None: curr_tree.set_data_count(label_num)
 					else:
 						curr_tree = curr_tree.right
-						if curr_tree.data_count == None: curr_tree.set_data_count(label_num)					
+						if curr_tree.data_count == None: curr_tree.set_data_count(label_num)
+
 	def clear_prune_history(self, node_):
+		"""clear the propogated data after pruning(recurrsive)
+		Args:
+		  node_    (Node): The Node to be cleared. All descendants of this node would also be cleared.
+		"""
+		assert(isinstance(node_, Node))
 		node_.clear_visit_history()
 		if node_.attr == 'leaf':
 			return
@@ -314,7 +361,15 @@ class Decision_tree():
 			self.clear_prune_history(node_.right)
 
 	def prune(self, data, label):
+		"""prune the tree with given data and label
+		Args:
+		  data     (numpy array with size (n,num_of_attributes)): Data to be used for pruning
+		  label (list of integers or numpy array with size (n,)): The corresponding labels for the data 
+		"""
+		assert (type(data) == np.ndarray and len(data.shape) == 2)
+		assert (type(label) == np.ndarray or type(label) == list)
 		self.prop(data, label)
+		zero_dict = dict.fromkeys(set(label),0)
 		leafs = self.leafs
 		while True:
 			new_leafs = []
@@ -328,9 +383,9 @@ class Decision_tree():
 					new_leafs.append(leaf)
 				else: #Now both sides of the parent should be leafs
 					# If no testing data had passed through a leaf. we treat it as zero acc
-					l_data = [0] if parent.left.data_count == None else parent.left.data_count.values()
-					r_data = [0] if parent.right.data_count == None else parent.right.data_count.values()
-					child_acc = float(max(l_data)+max(r_data))/max(sum(l_data)+sum(r_data),1)
+					l_data = zero_dict if parent.left.data_count == None else parent.left.data_count
+					r_data = zero_dict if parent.right.data_count == None else parent.right.data_count
+					child_acc = float(l_data[int(parent.left.value)]+r_data[int(parent.right.value)])/max(sum(l_data.values())+sum(r_data.values()),1)
 					p_data = [0] if parent.data_count == None else parent.data_count.values()
 					parent_acc = float(max(p_data))/max(sum(p_data),1)
 					# Check if we prune
@@ -349,7 +404,7 @@ class Decision_tree():
 		self.leafs = leafs
 		self.clear_prune_history(self.root)
 	
-	def draw(self):
+	def draw(self, filename):
 		"""
 		Usage: draw(tree)
 		Description: This function is to draw the tree
@@ -357,4 +412,7 @@ class Decision_tree():
 		Outputs: No output
 		"""
 		total_leaf = get_node_num(self.root)
-		draw_node(self.root, 0, self.depth, self.depth, total_leaf)
+		fig = plt.figure(figsize=(32,9))
+		fig = draw_node(fig, self.root, 0, self.depth, self.depth, total_leaf)
+		fig.savefig(filename)
+		#plt.clf()
