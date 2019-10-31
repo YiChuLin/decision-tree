@@ -9,12 +9,12 @@ Decision Tree project for Introduction to Machine Learning Course
 ## Getting Started
 install numpy and matplotlib if not already installed
 ```
-pip install --upgrade numpy, matplotlib
+pip install --upgrade numpy matplotlib
 ```
 clone this repository:
 ```
 git clone https://gitlab.doc.ic.ac.uk/al4419/decision-tree.git
-cd decision_tree
+cd decision-tree
 ```
 To train the decision tree with a given dataset, run:
 ```
@@ -22,12 +22,12 @@ python train.py path/to/dataset.txt
 ```
 train.py will output the confusion matrix as well as important measures for both pruned and unpruned tree.
 Two visualization figures would be created for the pruned and unpruned tree.
-- Pruned.png
-- Unpruned.png
+- Pruned.pdf
+- Unpruned.pdf
 
 Below is the output to result.txt of running
 ```
-python train.py wifi_db/clean_dataset.txt > result.txt
+python train.py wifi_db/noisy_dataset.txt > result.txt
 ```
 results.txt:
 ```
@@ -70,12 +70,12 @@ The average accuracy = 0.861
 
 The generated figures are as follows:
 
-Unpruned.png
+Unpruned.pdf
 ![Unpruned.png](img/Unpruned.png?raw=true "Unpruned.png")
-Pruned.png
+Pruned.pdf
 ![Pruned.png](img/Pruned.png?raw=true "Pruned.png")
 
 ## Authors
 - Arvin Lin (al4419@imperial.ac.uk)
-- YiChong Chen
-- Zhouyang Xie
+- YiChong Chen (yc3919@imperial.ac.uk)
+- Zhouyang Xie (zx1319@ic.ac.uk)
